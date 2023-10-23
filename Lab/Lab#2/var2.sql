@@ -3,7 +3,7 @@
 /* Задание 1 */
 SELECT 
     (first_name || ' ' || last_name) AS "ФИО",
-    salary AS "ОКЛАД",
+    to_char(salary, '9999999D99') AS "ОКЛАД",
     trunc(salary*0.87) AS "Оклад минус подоходный"
 FROM employees;
 
@@ -12,10 +12,10 @@ SELECT
     first_name AS "Имя",
     last_name AS "Фамилия",
     job_id AS "Должность", 
-    hire_date AS "Дата приема на работу"
+    to_char(hire_date, 'DD.MM.YYYY') AS "Дата приема на работу"
 FROM employees
 WHERE job_id IN ('AD_PRES', 'AD_VP', 'AD_ASST')
-AND hire_date BETWEEN SYMMETRIC
+OR hire_date BETWEEN
 '1995-01-01' AND '2023-01-01'
 LIMIT 5;
 
@@ -23,11 +23,11 @@ LIMIT 5;
 SELECT 
 	first_name AS "Имя",
 	last_name AS "Фамилия",
-	job_id AS "Должность", 
+	to_char(salary, '99999D99') AS "Оклад", 
 	to_char(hire_date, 'DD.MM.YYYY') AS "Дата приема на работу",
-
-	EXTRACT(month from now()) + EXTRACT(year from now())*12
-	- EXTRACT(month from hire_date) - EXTRACT(year from hire_date)*12
+	
+	EXTRACT(month from age(now(), hire_date)) 
+	+ EXTRACT(year from age(now(), hire_date))*12
 	as "Проработано месяцев"
 
 FROM employees;
