@@ -30,7 +30,7 @@ WHERE LENGTH(REGEXP_REPLACE(first_name, '[^aeiouAEIOU]', '', 'g')) <= 3;
 
 WITH tmp AS (
 	SELECT chr(i+96), i FROM generate_series(1,26) i)
-SELECT e.last_name sum(t.i) AS name_sum
-FROM db_employees e
+SELECT e.last_name, sum(t.i) AS name_sum
+FROM bd_employees e
 JOIN tmp t ON t.chr = ANY(string_to_array(LOWER(e.last_name), NULL))
 GROUP BY e.last_name;
