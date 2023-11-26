@@ -9,7 +9,7 @@ b) Напишите программу на языке PL/SQL, печатающ�
 и имя сотрудника с идентификатором 1 и всех его подчинённых, как
 прямых, так и подчинённых более низкого ранга. */
 
-CREATE OR REPLACE PROCEDURE department_names() AS $$ 
+CREATE OR REPLACE PROCEDURE department_names() AS 
 DECLARE d_attrs RECORD; 
 BEGIN
 
@@ -25,7 +25,7 @@ SELECT * FROM tmp
 LOOP 
     RAISE INFO ' % % ', d_attrs.first_name, d_attrs.last_name; 
 END LOOP; 
-END $$ LANGUAGE plpgsql; 
+END  LANGUAGE plpgsql; 
 CALL department_names();
 
 
@@ -38,6 +38,29 @@ employees в порядке возрастания заработной плат
 меньшую сторону, а у всех последующих сотрудников она сначала
 увеличивается на остаток от округления, полученный от предыдущего
 сотрудника, а затем округляется до сотен в меньшую сторону. */ 
+
+CREATE OR REPLACE FUNCTION print_employees() RETURNS VOID AS $$
+DECLARE
+current_salary INTEGER;
+m_salary INTEGER;
+mod_salary INTEGER := 0;
+employee_rec RECORD;
+BEGIN
+FOR employee_rec IN (SELECT last_name, first_name, salary_in_euro FROM bd6_employees ORDER BY salary_in_euro) LOOP
+current_salary := employee_rec.salary_in_euro;
+
+IF mod_salary=0 THEN
+m_salary := (current_salary / 100) * 100;
+            ELSE
+m_salary := ((current_salary + mod_salary) / 100) * 100;
+END IF;
+
+RAISE NOTICE 'Employee: % %, Modified Salary: %', employee_rec.last_name, employee_rec.first_name, m_salary;
+mod_salary := current_salary - m_salary;
+END LOOP;
+END $$ LANGUAGE plpgsql;
+
+SELECT print_employees();
 
 -- Task 3 -- 
 /* Напишите программу на языке PL/SQL, удаляющую 10 сотрудников с
