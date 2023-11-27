@@ -34,13 +34,9 @@ SELECT *
 FROM bd_employees
 WHERE LENGTH(REGEXP_REPLACE(first_name, '[^aeiouAEIOU]', '', 'g')) <= 3;
 
-WITH tmp AS 
-	(
-	SELECT
-	last_name,
-	(REGEXP_MATCHES(LOWER(last_name), '[a-z]', 'g'))[1] AS l,
-	COUNT(*)*(ASCII((REGEXP_MATCHES(LOWER(last_name), '[a-z]', 'g'))[1]) - 96) AS cnt_l
-	FROM bd_employees
-	GROUP BY last_name, l
-	)
-SELECT last_name, sum(cnt_l) FROM tmp GROUP BY last_name;
+WITH tmp AS (
+	SELECT chr(i+96), i FROM generate_series(1,26) i)
+SELECT e.last_name sum(t.i) AS name_sum
+FROM db_employees e
+JOIN tmp t ON t.chr = ANY(string_to_array(LOWER(e.last_name), NULL))
+GROUP BY e.last_name;
