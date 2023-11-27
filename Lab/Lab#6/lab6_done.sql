@@ -9,7 +9,7 @@ b) Напишите программу на языке PL/SQL, печатающ�
 и имя сотрудника с идентификатором 1 и всех его подчинённых, как
 прямых, так и подчинённых более низкого ранга. */
 
-CREATE OR REPLACE PROCEDURE department_names() AS 
+CREATE OR REPLACE PROCEDURE department_names() AS $$
 DECLARE d_attrs RECORD; 
 BEGIN
 
@@ -25,7 +25,7 @@ SELECT * FROM tmp
 LOOP 
     RAISE INFO ' % % ', d_attrs.first_name, d_attrs.last_name; 
 END LOOP; 
-END  LANGUAGE plpgsql; 
+END $$ LANGUAGE plpgsql; 
 CALL department_names();
 
 
@@ -39,7 +39,7 @@ employees в порядке возрастания заработной плат
 увеличивается на остаток от округления, полученный от предыдущего
 сотрудника, а затем округляется до сотен в меньшую сторону. */ 
 
-CREATE OR REPLACE PROCEDURE print_employees() RETURNS VOID AS $$
+CREATE OR REPLACE PROCEDURE print_employees() AS $$
 DECLARE
 current_salary INTEGER;
 m_salary INTEGER;
@@ -64,7 +64,7 @@ mod_salary := current_salary - m_salary;
 END LOOP;
 END $$ LANGUAGE plpgsql;
 
-SELECT print_employees();
+CALL print_employees();
 
 -- Task 3 -- 
 /* Напишите программу на языке PL/SQL, удаляющую 10 сотрудников с
@@ -116,7 +116,7 @@ DECLARE d_attrs RECORD;
 BEGIN
 
 FOR d_attrs IN WITH RECURSIVE tmp AS ( 
-    SELECT 1+i5 AS f1, 2+i5 AS f2, 3+i5 AS f3, 4+i5 AS f4,5+i*5 AS f5 
+    SELECT 1+i*5 AS f1, 2+i*5 AS f2, 3+i*5 AS f3, 4+i*5 AS f4,5+i*5 AS f5 
     FROM generate_series(0,199) i)
 
 SELECT * FROM tmp 
