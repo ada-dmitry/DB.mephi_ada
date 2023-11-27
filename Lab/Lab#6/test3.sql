@@ -1,26 +1,36 @@
-CREATE OR REPLACE PROCEDURE update_salary() AS $$
+CREATE OR REPLACE FUNCTION rearrange_salaries() RETURNS VOID AS $$
 DECLARE
-   emp_record bd6_employees%ROWTYPE;
-   counter integer := 0;
-   min_salary bd6_employees.salary_in_euro%TYPE;
-   max_salary bd6_employees.salary_in_euro%TYPE;
+    salaries RECORD;
+	small NUMERIC[];
+	larg NUMERIC[];
+	const CONSTANT INTEGER = 10;
 BEGIN
-   SELECT MIN(salary_in_euro), MAX(salary_in_euro) INTO min_salary, max_salary FROM bd6_employees;
-   
-   FOR emp_record IN
-   SELECT * FROM (SELECT * FROM bd6_employees ORDER BY salary_in_euro LIMIT 3) AS min_salaries
-   LOOP
+    FOR salaries IN 
+        SELECT id, salary_in_euro
+        FROM bd6_employees 
+        ORDER BY salary_in_euro 
+        LIMIT const
+	LOOP
+		small = array_append(small, (SELECT salary_in_euro FROM bd6_employees WHERE id = salaries.id));
+    	DELETE FROM bd6_employees
+    	WHERE id = salaries.id;
+	END LOOP;
 
-      DELETE FROM bd6_employees WHERE id = emp_record.id;
-      counter := counter + 1;
-   END LOOP;
-   FOR emp_record IN
-   SELECT * FROM (SELECT * FROM bd6_employees ORDER BY salary_in_euro DESC LIMIT 3) AS max_salaries
-   LOOP
-      UPDATE bd6_employees SET salary_in_euro = salary_in_euro + min_salary WHERE id = emp_record.id;
-      counter := counter + 1;
-   END LOOP;
-   
-   RAISE NOTICE 'Successfully updated % bd6_employees.', counter;
-END $$ LANGUAGE plpgsql;
-CALL update_salary();
+    FOR salaries IN 
+        SELECT id, salary_in_euro
+        FROM bd6_employees 
+        ORDER BY salary_in_euro DESC 
+        LIMIT const
+	LOOP
+		larg = array_append(larg, (SELECT id FROM bd6_employees WHERE id = salaries.id));
+	END LOOP;
+	
+	FOR i IN 1..const
+	LOOP
+        UPDATE bd6_employees
+        SET salary_in_euro = salary_in_euro + small[i]
+        WHERE id = larg[i];
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+SELECT rearrange_salaries();

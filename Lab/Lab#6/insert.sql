@@ -1,4 +1,4 @@
-DROP TABLE bd6_employees IF EXISTS;
+DROP TABLE IF EXISTS bd6_employees;
 
 -- CREATE TABLE bd6_departments(
 --   id integer PRIMARY KEY,
