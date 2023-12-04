@@ -30,14 +30,17 @@ b) Напишите программу на языке PL/SQL, печатающ�
 
 -- Пункт а)
 WITH RECURSIVE tmp AS (
-SELECT id, first_name, last_name, manager_id, 1 AS level
-FROM bd6_employees
-WHERE manager_id = 1 or id = 1
-UNION ALL
-SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1
-FROM bd6_employees e JOIN tmp t ON e.manager_id = t.id )
-
-SELECT * FROM tmp
+	SELECT id, first_name, last_name, manager_id, 1 AS level
+	FROM bd6_employees
+	WHERE manager_id = 1 OR id = 1
+  UNION ALL
+	SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1
+  FROM bd6_employees e
+  JOIN tmp t ON e.manager_id = t.id
+)
+SELECT id, first_name, last_name
+FROM tmp
+GROUP BY id, first_name, last_name;
 
 -- Пункт б)
 CREATE OR REPLACE PROCEDURE department_names(integer) AS $$
@@ -228,6 +231,12 @@ call f();
 
 -- Task 7 from lab4 -- 
 
+CREATE VIEW dep_staff_counts AS
+SELECT department, COUNT(*) AS ecount
+FROM staff
+GROUP BY department;
+
+SELECT * FROM dep_staff_counts;
 
 
 
