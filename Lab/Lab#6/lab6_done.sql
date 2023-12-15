@@ -9,41 +9,23 @@ b) Напишите программу на языке PL/SQL, печатающ�
 и имя сотрудника с идентификатором 1 и всех его подчинённых, как
 прямых, так и подчинённых более низкого ранга. */
 
--- CREATE OR REPLACE PROCEDURE department_names() AS $$
--- DECLARE d_attrs RECORD; 
--- BEGIN
-
--- FOR d_attrs IN WITH RECURSIVE tmp AS ( 
---     SELECT id, first_name, last_name, manager_id, 1 AS level 
---     FROM bd6_employees 
---     WHERE manager_id = 1 or id = 1 
---     UNION ALL 
---     SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1 
---     FROM bd6_employees e JOIN tmp t ON e.manager_id = t.id ) 
-
--- SELECT * FROM tmp 
--- LOOP 
---     RAISE INFO ' % % ', d_attrs.first_name, d_attrs.last_name; 
--- END LOOP; 
--- END $$ LANGUAGE plpgsql; 
--- CALL department_names();
-
 -- Пункт а)
 WITH RECURSIVE tmp AS (
-	SELECT id, first_name, last_name, manager_id, 1 AS level
-	FROM bd6_employees
-	WHERE manager_id = 1 OR id = 1
-  UNION ALL
-	SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1
+
+  SELECT id, first_name, last_name, manager_id, 1 AS level
+  FROM bd6_employees
+  WHERE id = 1
+  UNION all
+  SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1
   FROM bd6_employees e
-  JOIN tmp t ON e.manager_id = t.id
+  JOIN tmp t ON e.manager_id = t.id 
 )
-SELECT id, first_name, last_name
+SELECT * 
 FROM tmp
-GROUP BY id, first_name, last_name;
+;
 
 -- Пункт б)
-CREATE OR REPLACE PROCEDURE department_names(integer) AS $$
+CREATE OR REPLACE PROCEDURE depa(integer) AS $$
 DECLARE 
 	d_attrs RECORD;
 	i integer;
@@ -59,13 +41,12 @@ FOR d_attrs IN
 	IF d_attrs.manager_id=$1 THEN
 	 	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;   
 		l:= d_attrs.id;
-    	CALL department_names(l); 
+    	CALL depa(l); 
 	END IF;
 	END LOOP; 
 END $$ LANGUAGE plpgsql; 
 
-
-CREATE OR REPLACE PROCEDURE department_names2(integer) AS $$
+CREATE OR REPLACE PROCEDURE dep(integer) AS $$
 DECLARE
 	d_attrs RECORD;
 	BEGIN
@@ -85,10 +66,9 @@ DECLARE
 	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;
     END IF;
 	END LOOP; 
-CALL department_names($1);
+CALL depa($1);
 END $$ LANGUAGE plpgsql; 
-CALL department_names2(4);  
-
+CALL dep(1);   
 
 -- Task 2 --
 /* Напишите программу на языке PL/SQL, выбирающую строки из таблицы
@@ -100,6 +80,8 @@ employees в порядке возрастания заработной плат
 увеличивается на остаток от округления, полученный от предыдущего
 сотрудника, а затем округляется до сотен в меньшую сторону. */ 
 
+UPDATE bd6_employees SET salary_in_euro = 299 WHERE id = 3;
+
 CREATE OR REPLACE PROCEDURE print_employees() AS $$
 DECLARE
 current_salary INTEGER;
@@ -107,52 +89,28 @@ m_salary INTEGER;
 mod_salary INTEGER := 0;
 employee_rec RECORD;
 BEGIN
-FOR employee_rec IN (
+FOR employee_rec IN 
+	(
    SELECT last_name, first_name, salary_in_euro 
    FROM bd6_employees 
-   ORDER BY salary_in_euro) 
+   ORDER BY salary_in_euro
+	) 
 
 LOOP
-   current_salary := employee_rec.salary_in_euro;
-
-   IF mod_salary=0 THEN
-      m_salary := (current_salary / 100) * 100;
-   ELSE
-      m_salary := ((current_salary + mod_salary) / 100) * 100;
-END IF;
+	current_salary := employee_rec.salary_in_euro;
+	
+	m_salary := ((current_salary + mod_salary) / 100) * 100;
 
 RAISE NOTICE 'Employee: % % || Modified Salary: %', employee_rec.last_name, employee_rec.first_name, m_salary;
+mod_salary := mod(current_salary + mod_salary,100);
 END LOOP;
 END $$ LANGUAGE plpgsql;
 
 CALL print_employees();
-CREATE OR REPLACE PROCEDURE print_employees() AS $$
-DECLARE
-current_salary INTEGER;
-m_salary INTEGER;
-mod_salary INTEGER := 0;
-employee_rec RECORD;
-BEGIN
-FOR employee_rec IN (
-   SELECT last_name, first_name, salary_in_euro 
-   FROM bd6_employees 
-   ORDER BY salary_in_euro) 
+SELECT * 
+FROM bd6_employees
+ORDER BY salary_in_euro;
 
-LOOP
-   current_salary := employee_rec.salary_in_euro;
-
-   IF mod_salary=0 THEN
-      m_salary := (current_salary / 100) * 100;
-   ELSE
-      m_salary := ((current_salary + mod_salary) / 100) * 100;
-END IF;
-
-RAISE NOTICE 'Employee: % %, Modified Salary: %', employee_rec.last_name, employee_rec.first_name, m_salary;
-mod_salary := current_salary - m_salary;
-END LOOP;
-END $$ LANGUAGE plpgsql;
-
-CALL print_employees();
 
 -- Task 3 -- 
 /* Напишите программу на языке PL/SQL, удаляющую 10 сотрудников с
@@ -167,7 +125,7 @@ DECLARE
     salaries RECORD;
 	small NUMERIC[];
 	larg NUMERIC[];
-	const CONSTANT INTEGER = 10;
+	const CONSTANT INTEGER = 3;
 BEGIN
     FOR salaries IN 
         SELECT id, salary_in_euro
@@ -242,26 +200,42 @@ SELECT * FROM dep_staff_counts;
 
 
 
-CREATE OR REPLACE PROCEDURE department_names(integer) AS $$DECLARE d_attrs RECORD;
-i integer;l integer;
+CREATE OR REPLACE PROCEDURE department_names(integer) AS $$
+DECLARE 
+	d_attrs RECORD;
+	i INTEGER;
+	l INTEGER;
 BEGIN
-FOR d_attrs IN (   SELECT id,last_name, first_name, manager_id
-   FROM bd6_employees order by manager_id )   
-   LOOP
-      if d_attrs.manager_id=$1 then
-    RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;    l:= d_attrs.id;
-    call department_names(l);    end if;
+FOR d_attrs IN 
+	(
+	SELECT id,last_name, first_name, manager_id
+	FROM bd6_employees order by manager_id 
+	)   
+	LOOP
+		IF d_attrs.manager_id=$1 THEN
+    		RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;    
+			l:= d_attrs.id;
+    	CALL department_names(l);    
+	END IF;
 END LOOP; 
 END $$ LANGUAGE plpgsql; 
 
 
 CREATE OR REPLACE PROCEDURE department_names2(integer) AS $$
 DECLARE d_attrs RECORD;
-BEGINFOR d_attrs IN (
-   SELECT id,last_name, first_name, manager_id   FROM bd6_employees order by manager_id )
+BEGIN
+	FOR d_attrs IN 
+	(
+	SELECT id,last_name, first_name, manager_id   
+	FROM bd6_employees 
+	order by manager_id 
+	)
       
 LOOP   
-   if d_attrs.id=$1 then    RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;
-    end if;END LOOP; 
-CALL department_names($1);END $$ LANGUAGE plpgsql; 
+	if d_attrs.id=$1 then    
+	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;
+	end if;
+	END LOOP; 
+CALL department_names($1);
+END $$ LANGUAGE plpgsql; 
 CALL department_names2(4);

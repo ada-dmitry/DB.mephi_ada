@@ -33,7 +33,7 @@ BEGIN
         ORDER BY salary_in_euro
         LIMIT 10
     ), highest_salary AS (
-        SELECT max(salary_in_euro) AS max_salary
+        SELECT max(salary_in_euro) AS max_salary 
         FROM bd6_employees
     )
     UPDATE bd6_employees e
