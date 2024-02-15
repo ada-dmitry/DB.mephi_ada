@@ -189,6 +189,33 @@ call f();
 
 -- Task 7 from lab4 -- 
 
+
+CREATE table staff(
+	id integer primary key,
+	name varchar(64) NOT NULL,
+	department varchar(64) NOT NULL
+);
+
+CREATE SEQUENCE staff_id_seq
+	START WITH 12
+	CYCLE
+	INCREMENT BY 8
+	CACHE 100;
+	
+
+INSERT INTO staff VALUES
+	(nextval('staff_id_seq'), 'Ivan Makarenko', 'Director');
+	
+INSERT INTO staff
+	(SELECT nextval('staff_id_seq'), last_name, department_name
+	 FROM employees e JOIN departments d ON e.department_id = d.department_id);
+	 
+UPDATE staff SET department = 'Innovations department'
+	WHERE id < 40;
+	
+DELETE FROM staff 
+	WHERE name ILIKE('%K%');
+
 CREATE VIEW dep_staff_counts AS
 SELECT department, COUNT(*) AS ecount
 FROM staff
@@ -200,42 +227,224 @@ SELECT * FROM dep_staff_counts;
 
 
 
-CREATE OR REPLACE PROCEDURE department_names(integer) AS $$
+-- CREATE OR REPLACE PROCEDURE department_names(integer) AS $$
+-- DECLARE 
+-- 	d_attrs RECORD;
+-- 	i INTEGER;
+-- 	l INTEGER;
+-- BEGIN
+-- FOR d_attrs IN 
+-- 	(
+-- 	SELECT id,last_name, first_name, manager_id
+-- 	FROM bd6_employees order by manager_id 
+-- 	)   
+-- 	LOOP
+-- 		IF d_attrs.manager_id=$1 THEN
+--     		RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;    
+-- 			l:= d_attrs.id;
+--     	CALL department_names(l);    
+-- 	END IF;
+-- END LOOP; 
+-- END $$ LANGUAGE plpgsql; 
+
+
+-- CREATE OR REPLACE PROCEDURE department_names2(integer) AS $$
+-- DECLARE d_attrs RECORD;
+-- BEGIN
+-- 	FOR d_attrs IN 
+-- 	(
+-- 	SELECT id,last_name, first_name, manager_id   
+-- 	FROM bd6_employees 
+-- 	order by manager_id 
+-- 	)
+      
+-- LOOP   
+-- 	if d_attrs.id=$1 then    
+-- 	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;
+-- 	end if;
+-- 	END LOOP; 
+-- CALL department_names($1);
+-- END $$ LANGUAGE plpgsql; 
+-- CALL department_names2(4);
+
+
+/* Вариант 1 || Работа 6 || Антипенко, Дробышевский */
+
+
+-- Task 1 -- 
+-- Пункт а)
+WITH RECURSIVE tmp AS (
+
+  SELECT id, first_name, last_name, manager_id, 1 AS level
+  FROM bd6_employees
+  WHERE id = 1
+  UNION all
+  SELECT e.id, e.first_name, e.last_name, e.manager_id, t.level + 1
+  FROM bd6_employees e
+  JOIN tmp t ON e.manager_id = t.id 
+)
+SELECT * 
+FROM tmp
+;
+
+-- Пункт б)
+CREATE OR REPLACE PROCEDURE depa(integer) AS $$
 DECLARE 
 	d_attrs RECORD;
-	i INTEGER;
-	l INTEGER;
+	i integer;
+	l integer;
 BEGIN
 FOR d_attrs IN 
 	(
 	SELECT id,last_name, first_name, manager_id
-	FROM bd6_employees order by manager_id 
+	FROM bd6_employees 
+	ORDER BY manager_id
 	)   
 	LOOP
-		IF d_attrs.manager_id=$1 THEN
-    		RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;    
-			l:= d_attrs.id;
-    	CALL department_names(l);    
+	IF d_attrs.manager_id=$1 THEN
+	 	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;   
+		l:= d_attrs.id;
+    	CALL depa(l); 
 	END IF;
-END LOOP; 
+	END LOOP; 
 END $$ LANGUAGE plpgsql; 
 
-
-CREATE OR REPLACE PROCEDURE department_names2(integer) AS $$
-DECLARE d_attrs RECORD;
-BEGIN
+CREATE OR REPLACE PROCEDURE dep(integer) AS $$
+DECLARE
+	d_attrs RECORD;
+	BEGIN
 	FOR d_attrs IN 
 	(
-	SELECT id,last_name, first_name, manager_id   
+	SELECT 
+		id,
+		last_name, 
+		first_name, 
+		manager_id   
 	FROM bd6_employees 
-	order by manager_id 
+	ORDER BY manager_id
 	)
       
-LOOP   
-	if d_attrs.id=$1 then    
+	LOOP   
+	IF d_attrs.id=$1 THEN   
 	RAISE INFO ' % % % % ', d_attrs.first_name, d_attrs.last_name, d_attrs.id, d_attrs.manager_id;
-	end if;
+    END IF;
 	END LOOP; 
-CALL department_names($1);
+CALL depa($1);
 END $$ LANGUAGE plpgsql; 
-CALL department_names2(4);
+CALL dep(1);   
+
+-- Task 2 --
+
+UPDATE bd6_employees SET salary_in_euro = 299 WHERE id = 3;
+
+CREATE OR REPLACE PROCEDURE print_employees() AS $$
+DECLARE
+current_salary INTEGER;
+m_salary INTEGER;
+mod_salary INTEGER := 0;
+employee_rec RECORD;
+i INTEGER = 0;
+cnt INTEGER;
+BEGIN
+SELECT COUNT(*) INTO cnt FROM bd6_employees;
+FOR employee_rec IN 
+	(
+   SELECT last_name, first_name, salary_in_euro 
+   FROM bd6_employees 
+   ORDER BY salary_in_euro
+	) 
+LOOP
+
+	current_salary := employee_rec.salary_in_euro;
+	
+	IF cnt - 1 = i THEN 
+	m_salary := ((current_salary) / 100) * 100 + mod_salary;
+	ELSE 
+	m_salary := ((current_salary) / 100) * 100;
+	END IF;
+
+RAISE NOTICE 'Employee: % % || Modified Salary: %', employee_rec.last_name, employee_rec.first_name, m_salary;
+
+mod_salary := mod_salary + mod(current_salary, 100);
+i := i+1;
+
+END LOOP;
+
+END $$ LANGUAGE plpgsql;
+
+CALL print_employees();
+SELECT * 
+FROM bd6_employees
+ORDER BY salary_in_euro;
+
+
+-- Task 3 -- 
+CREATE OR REPLACE FUNCTION rearrange_salaries() RETURNS VOID AS $$
+DECLARE
+    salaries RECORD;
+	small NUMERIC[];
+	larg NUMERIC[];
+	const CONSTANT INTEGER = 10;
+BEGIN
+    FOR salaries IN 
+        SELECT id, salary_in_euro
+        FROM bd6_employees 
+        ORDER BY salary_in_euro 
+        LIMIT const
+	LOOP
+		small = array_append(small, (SELECT salary_in_euro FROM bd6_employees WHERE id = salaries.id));
+		UPDATE bd6_employees SET manager_id = NULL WHERE manager_id = salaries.id;
+    	DELETE FROM bd6_employees
+    	WHERE id = salaries.id;
+	END LOOP;
+
+    FOR salaries IN 
+        SELECT id, salary_in_euro
+        FROM bd6_employees 
+        ORDER BY salary_in_euro DESC 
+        LIMIT const
+	LOOP
+		larg = array_append(larg, (SELECT id FROM bd6_employees WHERE id = salaries.id));
+	END LOOP;
+	
+	FOR i IN 1..const
+	LOOP
+        UPDATE bd6_employees
+        SET salary_in_euro = salary_in_euro + small[i]
+        WHERE id = larg[i];
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+SELECT rearrange_salaries();
+
+-- Task 4 --
+
+CREATE OR REPLACE PROCEDURE f() AS $$ 
+DECLARE d_attrs RECORD; 
+BEGIN
+
+FOR d_attrs IN WITH RECURSIVE tmp AS ( 
+    SELECT 1+i*5 AS f1, 2+i*5 AS f2, 3+i*5 AS f3, 4+i*5 AS f4,5+i*5 AS f5 
+    FROM generate_series(0,199) i)
+
+SELECT * FROM tmp 
+LOOP 
+case 
+when ( mod(d_attrs.f1,2)!=0) 
+then RAISE INFO ' % % % % %', d_attrs.f1, d_attrs.f2, d_attrs.f3, d_attrs.f4, d_attrs.f5; 
+when ( mod(d_attrs.f1,2)=0) 
+then RAISE INFO ' % % % % %', d_attrs.f5, d_attrs.f4, d_attrs.f3, d_attrs.f2, d_attrs.f1; 
+end case; 
+END LOOP; 
+END $$ LANGUAGE plpgsql; 
+call f();
+
+-- Task 7 from lab4 -- 
+DROP VIEW IF EXISTS dep_staff_counts;
+
+CREATE VIEW dep_staff_counts AS
+SELECT department, COUNT(*) AS ecount
+FROM staff
+GROUP BY department;
+
+SELECT * FROM dep_staff_counts;

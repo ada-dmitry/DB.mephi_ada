@@ -1,13 +1,13 @@
 DROP TABLE IF EXISTS bd6_employees;
 
--- CREATE TABLE bd6_departments(
---   id integer PRIMARY KEY,
---   name varchar(64),
---   postal_code varchar(6),
---   street varchar(64),
---   building varchar(16),
---   city varchar(32)
--- );
+CREATE TABLE bd6_departments(
+  id integer PRIMARY KEY,
+  name varchar(64),
+  postal_code varchar(6),
+  street varchar(64),
+  building varchar(16),
+  city varchar(32)
+);
 CREATE TABLE
     bd6_employees (
         id integer PRIMARY KEY,
@@ -21,13 +21,13 @@ CREATE TABLE
         UNIQUE (last_name, first_name, department_id)
     );
 
--- INSERT INTO bd6_departments 
--- VALUES(10, 'Administration', '109658', 'Leningradskoe shosse', '1', 'Moscow'),
--- (20, 'Marketing', '107701', 'Lenina', '22a', 'Volgograd'),
--- (30, 'Purchasing', '109901', 'Mikluho-Maklaya', '8', 'Bryansk'),
--- (40, 'Human Resources', '10967', '5-ya parkovaya', '16', 'Moscow'),
--- (50, 'Shipping', '109659', '38 Bakinskih komissarov', '77', 'Moscow'),
--- (60, 'IT', '109902', 'Pervomajskaya', '33', 'Kirov');
+INSERT INTO bd6_departments 
+VALUES(10, 'Administration', '109658', 'Leningradskoe shosse', '1', 'Moscow'),
+(20, 'Marketing', '107701', 'Lenina', '22a', 'Volgograd'),
+(30, 'Purchasing', '109901', 'Mikluho-Maklaya', '8', 'Bryansk'),
+(40, 'Human Resources', '10967', '5-ya parkovaya', '16', 'Moscow'),
+(50, 'Shipping', '109659', '38 Bakinskih komissarov', '77', 'Moscow'),
+(60, 'IT', '109902', 'Pervomajskaya', '33', 'Kirov');
 INSERT INTO
     bd6_employees
 VALUES
